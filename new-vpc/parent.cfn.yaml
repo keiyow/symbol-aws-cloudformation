@@ -1,0 +1,162 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: symbol with single subnet VPC
+Parameters:
+  ServiceName:
+    Description: Please input Service Name.
+    Type: String
+    Default: SYMBOL
+    AllowedPattern: '[a-zA-Z0-9][-a-zA-Z0-9]*'
+    ConstraintDescription: ''
+  AvailabilityZone1:
+    Description: Please input AvailabilityZone1
+    Type: 'AWS::EC2::AvailabilityZone::Name'
+  PublicLocationIP:
+    Description: Please input range of IP addresses that can access symbol-rest
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  symbolInstanceType:
+    Description: API EC2 instance type
+    Type: String
+    Default: t3.large
+    AllowedValues:
+      - t3.large
+      - t3.xlarge
+      - m5.large
+      - m5.xlarge
+      - c5n.xlarge
+      - c5n.2xlarge
+      - r5.large
+      - r5n.large
+    ConstraintDescription: must be a valid EC2 instance type.
+  symbolRootVolumeSize:
+    Default: '8'
+    Description: Please Select EBS Root Volume Size(GB)
+    Type: Number
+    AllowedValues:
+      - '8'
+      - '30'
+      - '100'
+    ConstraintDescription: 'The larger the size, the more it will cost.'
+  symbolDataVolumeSize:
+    Default: '300'
+    Description: Please Select EBS Mongo Volume Size(GB)
+    Type: Number
+    AllowedValues:
+      - '10'
+      - '100'
+      - '300'
+      - '600'
+      - '1000'
+    ConstraintDescription: 'The larger the size, the more it will cost.'
+  DefaultUnixUser:
+    Default: symbol
+    Description: Please Input Default Unix User
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z0-9][a-zA-Z0-9-.]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+  SymbolNetwork:
+    Description: Please select Symbol Network
+    Type: String
+    Default: testnet
+    AllowedValues:
+      - testnet
+    ConstraintDescription: ''
+  SymbolAssembly:
+    Description: Please select Symbol Assembly
+    Type: String
+    Default: dual
+    AllowedValues:
+      - api
+      - peer
+      - dual
+    ConstraintDescription: ''
+  SymbolBootstrapVersion:
+    Description: Please select Symbol Bootstrap Version
+    Type: String
+    Default: '0.3.1'
+    AllowedValues:
+      - '0.3.0'
+      - '0.3.1'
+    ConstraintDescription: ''
+  SymbolCreateVotingFile:
+    Description: Please select Symbol create Voting File
+    Type: String
+    Default: 'Yes'
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    ConstraintDescription: ''
+
+Metadata:
+  'AWS::CloudFormation::Interface': 
+    ParameterGroups:
+      - Label:
+          default: VPC Configuration
+        Parameters:
+          - ServiceName
+          - AvailabilityZone1
+      - Label:
+          default: Security Group Configuration
+        Parameters:
+          - PublicLocationIP
+      - Label:
+          default: Node Configuration
+        Parameters:
+          - DefaultUnixUser
+          - KeyName
+      - Label:
+          default: Symbol Node Configuration
+        Parameters:
+          - symbolInstanceType
+          - symbolRootVolumeSize
+          - symbolDataVolumeSize
+      - Label:
+          default: Symbol Configuration
+        Parameters:
+          - SymbolNetwork
+          - SymbolAssembly
+          - SymbolBootstrapVersion
+          - SymbolCreateVotingFile
+
+Resources:
+  symbolNestStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: ./symbol.cfn.yaml
+      Parameters:
+        ServiceName: !Ref ServiceName
+        AvailabilityZone1: !Ref AvailabilityZone1
+        PublicLocationIP: !Ref PublicLocationIP
+        symbolInstanceType: !Ref symbolInstanceType
+        symbolRootVolumeSize: !Ref symbolRootVolumeSize
+        symbolDataVolumeSize: !Ref symbolDataVolumeSize
+        symbolDataDiretoryName: '/mnt/symbol'
+        DefaultUnixUser: !Ref DefaultUnixUser
+        KeyName: !Ref KeyName
+        SymbolNetwork: !Ref SymbolNetwork
+        SymbolBootstrapVersion: !Ref SymbolBootstrapVersion
+        SymbolAssembly: !Ref SymbolAssembly
+        SymbolCreateVotingFile: !Ref SymbolCreateVotingFile
+Outputs:
+  symbolEndpoint:
+    Value: !GetAtt symbolNestStack.Outputs.symbolEndpoint
+    Description: symbol Rest Endpoint
+  chainInfo:
+    Value: !Join 
+      - ''
+      - - !GetAtt symbolNestStack.Outputs.symbolEndpoint
+        - '/chain/info'
+  nodeInfo:
+    Value: !Join 
+      - ''
+      - - !GetAtt symbolNestStack.Outputs.symbolEndpoint
+        - '/node/info'

@@ -1,0 +1,564 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: symbol from nem with single subnets VPC
+Parameters:
+  ServiceName:
+    Description: Please input Service Name.
+    Type: String
+    Default: SYMBOL
+    AllowedPattern: '[a-zA-Z0-9][-a-zA-Z0-9]*'
+    ConstraintDescription: ''
+  AvailabilityZone1:
+    Description: Please input AvailabilityZone1
+    Type: 'AWS::EC2::AvailabilityZone::Name'
+  VpcCidrBlock:
+    Type: String
+    Description: Please input an IP range in VPC.
+    Default: 10.0.0.0/16
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/16'
+    ConstraintDescription: ''
+  VpcSubnetNamePublic1:
+    Description: Please input the subnet name of Public
+    Type: String
+    Default: public
+    AllowedPattern: '[-a-zA-Z0-9]*'
+    ConstraintDescription: ''
+  VpcSubnetCidrPublic1:
+    Type: String
+    Description: Please input an IP range in Public Subnet
+    Default: 10.0.0.0/24
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/24'
+    ConstraintDescription: ''
+  PublicLocationIP:
+    Description: Please input range of IP addresses that can access symbol-rest
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  Ec2ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+  symbolInstanceType:
+    Description: API EC2 instance type
+    Type: String
+    Default: t3.large
+    AllowedValues:
+      - t3.large
+      - t3.xlarge
+      - m5.large
+      - m5.xlarge
+      - c5n.xlarge
+      - c5n.2xlarge
+      - r5.large
+      - r5n.large
+    ConstraintDescription: must be a valid EC2 instance type.
+  symbolRootVolumeSize:
+    Default: '8'
+    Description: Root Volume Size
+    Type: Number
+    MinValue: '8'
+    MaxValue: '4000'
+    ConstraintDescription: 'The larger the size, the more it will cost.'
+  symbolDataVolumeSize:
+    Default: '10'
+    Description: Data Volume Size
+    Type: Number
+    MinValue: '10'
+    MaxValue: '4000'
+    ConstraintDescription: 'The larger the size, the more it will cost.'
+  symbolDataDiretoryName:
+    Default: /mnt/symbol
+    Description: Please Input Block Directory Name
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '/[a-z0-9///-]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  DefaultUnixUser:
+    Default: symbol
+    Description: Please Input Default Unix User
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z0-9][a-zA-Z0-9-.]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+  SymbolNetwork:
+    Description: Please select Symbol Network
+    Type: String
+    Default: testnet
+    AllowedValues:
+      - testnet
+    ConstraintDescription: ''
+  SymbolBootstrapVersion:
+    Description: Please select Symbol Bootstrap Version
+    Type: String
+    Default: '0.2.1'
+  SymbolAssembly:
+    Description: Please select Symbol Assembly
+    Type: String
+    Default: dual
+    AllowedValues:
+      - api
+      - peer
+      - dual
+    ConstraintDescription: ''
+  SymbolCreateVotingFile:
+    Description: Please select Symbol create Voting File
+    Type: String
+    Default: 'Yes'
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    ConstraintDescription: ''
+
+Conditions:
+  EnableVoting: !Equals 
+    - !Ref SymbolCreateVotingFile
+    - 'Yes'
+
+Resources:
+  VPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      CidrBlock: !Ref VpcCidrBlock
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - '-'
+            - - !Ref ServiceName
+              - network
+  Public1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref VpcSubnetCidrPublic1
+      AvailabilityZone: !Ref AvailabilityZone1
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - '-'
+            - - !Ref ServiceName
+              - !Select
+                - '2'
+                - !Split 
+                  - '-'
+                  - !Ref AvailabilityZone1
+              - !Ref VpcSubnetNamePublic1
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - '-'
+            - - !Ref ServiceName
+              - gateway
+  GatewayToInternet:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Network
+          Value: Public
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref ServiceName
+              - '-route'
+  Public1Route:
+    Type: 'AWS::EC2::Route'
+    DependsOn: GatewayToInternet
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  Public1SubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref Public1
+      RouteTableId: !Ref PublicRouteTable
+  SvSymbolSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Join 
+        - ''
+        - - !Ref ServiceName
+          - '-sv-symbol'
+      Tags:
+        - Value: !Join 
+            - ''
+            - - !Ref ServiceName
+              - '-sv-symbol'
+          Key: Name
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: !Ref PublicLocationIP
+        - IpProtocol: tcp
+          FromPort: 7900
+          ToPort: 7900
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      GroupDescription: Enable API Node Settings
+
+  AttachOutboundSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupName: !Join 
+        - ''
+        - - !Ref ServiceName
+          - '-attach-outbound'
+      Tags:
+        - Value: !Join 
+            - ''
+            - - !Ref ServiceName
+              - '-attach-outbound'
+          Key: Name
+      VpcId: !Ref VPC
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      GroupDescription: Enable Attach Outbound Settings
+  AWSSymbolAccessRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+  AWSSSMRolePolicies:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: AWSSSMAccessPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'ssm:DescribeAssociation'
+              - 'ssm:GetDeployablePatchSnapshotForInstance'
+              - 'ssm:GetDocument'
+              - 'ssm:GetManifest'
+              - 'ssm:GetParameters'
+              - 'ssm:ListAssociations'
+              - 'ssm:ListInstanceAssociations'
+              - 'ssm:PutInventory'
+              - 'ssm:PutComplianceItems'
+              - 'ssm:PutConfigurePackageResult'
+              - 'ssm:UpdateAssociationStatus'
+              - 'ssm:UpdateInstanceAssociationStatus'
+              - 'ssm:UpdateInstanceInformation'
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - 'ssmmessages:CreateControlChannel'
+              - 'ssmmessages:CreateDataChannel'
+              - 'ssmmessages:OpenControlChannel'
+              - 'ssmmessages:OpenDataChannel'
+            Resource: '*'
+      Roles:
+        - !Ref AWSSymbolAccessRole
+  AWSAssumeAccessRolePolicies:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: AWSAssumeAccessRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sts:AssumeRole'
+            Resource: 'arn:aws:iam::*:role/*'
+      Roles:
+        - !Ref AWSSymbolAccessRole
+  SymbolEc2InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref AWSSymbolAccessRole
+
+  EIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  EIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt 
+          - EIP
+          - AllocationId
+      InstanceId: !Ref symbolInstance
+
+  symbolInstance:
+    Type: 'AWS::EC2::Instance'
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          InstallAndRun:
+            - Install
+            - DiskSetting
+            - Configure
+            - SymbolSetup
+        Install:
+          packages:
+            apt:
+              docker.io: []
+              docker-compose: []
+              nvme-cli: []
+              git: []
+              nodejs: []
+              npm: []
+        DiskSetting:
+          files:
+            /tmp/mkblockdisk:
+              content: !Join 
+                - ''
+                - - |
+                    #!/bin/bash -v
+                  - '#Partition new disks'
+                  - |+
+
+                  - mkfs.xfs -s size=4096 -b size=4096 $1
+                  - |+
+
+                  - '#Make Folders to mount new disks'
+                  - |+
+
+                  - mkdir -p $2
+                  - |+
+
+                  - |+
+
+                  - '#Mount New Disks'
+                  - |+
+
+                  - |
+                    Add mounts to FSTab so it will stick in reboot
+                  - >
+                    blkid | grep $1 | awk -v directory=$2 '{ gsub("\"", "", $2);
+                    print $2, directory, "xfs", "defaults,nofail", "0", "0"}' >>
+                    /etc/fstab
+                  - |
+                    mount -a
+              mode: '000755'
+              owner: root
+              group: root
+          commands:
+            01mkblock:
+              command: !Join 
+                - ''
+                - - >
+                    export ID=$( for i in `ls /dev/nvme*n1`;do if [ 0 -ne `nvme
+                    id-ctrl -v $i | grep sdf | wc -l` ]; then echo $i; fi ;done)
+                  - 'bash /tmp/mkblockdisk ${ID} '
+                  - !Ref symbolDataDiretoryName
+                  - |+
+
+        Configure:
+          commands:
+            00docker:
+              command: !Join 
+                - ''
+                - - 'usermod -aG docker '
+                  - !Ref DefaultUnixUser
+                  - |+
+
+        SymbolSetup:
+          files:
+            /tmp/my_custom_preset.yml:
+              content: !Join
+                - ''
+                - - |
+                    nodes:
+                  - '  - voting: '
+                  - !If
+                    - EnableVoting
+                    - 'true'
+                    - 'false'
+                  - |+
+
+            /tmp/symbolinstall:
+              content: !Join
+                - ''
+                - - |
+                    #!/bin/bash -v
+                  - '# symbol Install'
+                  - |+
+
+                  - 'npm i -g symbol-bootstrap@'
+                  - !Ref SymbolBootstrapVersion
+                  - |+
+
+                  - 'mkdir '
+                  - !Ref symbolDataDiretoryName
+                  - /data
+                  - |+
+
+                  - 'chown -R '
+                  - !Ref DefaultUnixUser
+                  - '. '
+                  - !Ref symbolDataDiretoryName
+                  - /data
+                  - |+
+
+              mode: '000755'
+              owner: root
+              group: root
+
+            /tmp/symbolsetup:
+              content: !Join
+                - ''
+                - - |
+                    #!/bin/bash -v
+                  - '# symbol Setup'
+                  - |+
+
+                  - 'cd '
+                  - !Ref symbolDataDiretoryName
+                  - /data
+                  - |+
+
+                  - 'symbol-bootstrap start -p '
+                  - !Ref SymbolNetwork
+                  - ' -a '
+                  -  !Ref SymbolAssembly
+                  - ' -c /tmp/my_custom_preset.yml --detached'
+
+              mode: '000755'
+              owner: root
+              group: root
+
+          commands:
+            00install:
+              command: bash /tmp/symbolinstall
+
+            01setup:
+              command: !Join 
+                - ''
+                - - 'su - '
+                  - !Ref DefaultUnixUser
+                  - ' -c "bash /tmp/symbolsetup"'
+                  - |+
+
+    Properties:
+      ImageId: !Ref Ec2ImageId
+      InstanceType: !Ref symbolInstanceType
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref symbolRootVolumeSize
+            VolumeType: gp3
+        - DeviceName: /dev/sdf
+          Ebs:
+            VolumeSize: !Ref symbolDataVolumeSize
+            VolumeType: gp3
+      SecurityGroupIds:
+        - !Ref SvSymbolSecurityGroup
+        - !Ref AttachOutboundSecurityGroup
+      KeyName: !Ref KeyName
+      UserData: !Base64 
+        'Fn::Join':
+          - ''
+          - - |
+              #cloud-config
+            - |
+              system_info:
+            - |2
+                default_user:
+            - '    name: '
+            - !Ref DefaultUnixUser
+            - |+
+
+            - |
+              preserve_hostname: false
+            - 'hostname: sv-'
+            - !Ref SymbolAssembly
+            - |+
+
+            - |
+              manage_etc_hosts: true
+            - |
+              runcmd:
+            - |2
+                - apt-get -y update
+            - |2
+                - DEBIAN_FRONTEND=noninteractive apt install -y python3-pip
+            - |2
+                - pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            - '  - /usr/local/bin/cfn-init -v '
+            - '         --stack '
+            - ''''
+            - !Ref 'AWS::StackName'
+            - ''''
+            - '         --resource symbolInstance '
+            - '         --configsets InstallAndRun '
+            - '         --region '
+            - ''''
+            - !Ref 'AWS::Region'
+            - ''''
+            - |+
+
+            - '  - /usr/local/bin/cfn-signal -e $? '
+            - '         --stack '
+            - ''''
+            - !Ref 'AWS::StackName'
+            - ''''
+            - '         --resource symbolInstance '
+            - '         --region '
+            - ''''
+            - !Ref 'AWS::Region'
+            - ''''
+            - |+
+
+      SubnetId: !Ref Public1
+      IamInstanceProfile: !Ref SymbolEc2InstanceProfile
+      Tags:
+        - Key: Name
+          Value: !Join 
+            - ''
+            - - !Ref ServiceName
+              - '-'
+              - !Ref SymbolAssembly
+    CreationPolicy:
+      ResourceSignal:
+        Count: '1'
+        Timeout: PT30M
+Outputs:
+  symbolEndpoint:
+    Value: !Join 
+      - ''
+      - - 'http://'
+        - !GetAtt 
+          - symbolInstance
+          - PublicIp
+        - ':3000'
+    Description: symbol Rest Accesspoint
