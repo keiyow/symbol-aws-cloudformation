@@ -51,8 +51,20 @@
 
     It should take about 15 minutes to complete.
 
+7. click the "Outputs" on the stack
+
+    ![image](https://user-images.githubusercontent.com/20014134/102836222-30a86180-443c-11eb-94a0-9f7c4f5d4d60.png)
+
 ## FAQ
 
 ### Q. I want to login to the server remotely, how do I do it?
 
 A. You can login via the session manager on AWS System Manager Service, on the AWS console screen.
+
+### Q. Where's the Symbol data?
+
+A. You can find the data in this directory.
+
+```shell
+/mnt/symbol/data
+```
