@@ -114,10 +114,30 @@ Parameters:
       - 'Yes'
       - 'No'
     ConstraintDescription: ''
+  SymbolFriendlyName:
+    Description: Please input Symbol FriendlyName
+    Type: String
+    Default: ''
+  SymbolSuperNodeSettings:
+    Description: Please select Symbol Super Node Settings (7880 open and enable agent)
+    Type: String
+    Default: 'No'
+    AllowedValues:
+      - 'Yes'
+      - 'No'
 
 Conditions:
   EnableVoting: !Equals 
     - !Ref SymbolCreateVotingFile
+    - 'Yes'
+  CheckFrendlyName: !Equals
+    - !Ref SymbolFriendlyName
+    - ''
+  CheckPeer: !Equals
+    - !Ref SymbolAssembly
+    - peer
+  EnableSuperNode: !Equals
+    - !Ref SymbolSuperNodeSettings
     - 'Yes'
 
 Resources:
@@ -214,6 +234,13 @@ Resources:
           FromPort: 7900
           ToPort: 7900
           CidrIp: 0.0.0.0/0
+        - !If 
+          - EnableSuperNode
+          - IpProtocol: tcp
+            FromPort: 7880
+            ToPort: 7880
+            CidrIp: 0.0.0.0/0
+          - !Ref AWS::NoValue
       SecurityGroupEgress:
         - IpProtocol: icmp
           FromPort: -1
@@ -406,6 +433,47 @@ Resources:
                     - 'false'
                   - |+
 
+                  - !If
+                    - CheckFrendlyName
+                    - !Ref 'AWS::NoValue'
+                    - !Join
+                      - ''
+                      - - '    friendlyName: '
+                        - !Ref SymbolFriendlyName
+
+                  - |+
+
+                  - !If
+                    - EnableSuperNode
+                    - '    rewardProgram: SuperNode'
+                    - !Ref 'AWS::NoValue'
+                  - |+
+
+                  - !If
+                    - EnableSuperNode
+                    - !Join
+                      - ''
+                      - - '    host: '
+                        - !Ref EIP
+                    - !Ref 'AWS::NoValue'
+                  - |+
+
+                  - !If
+                    - EnableSuperNode
+                    - !Join
+                      - ''
+                      - - '    agentUrl: https://'
+                        - !Ref EIP
+                        - ':7880'
+                    - !Ref 'AWS::NoValue'
+                  - |+
+
+                  - !If
+                    - EnableSuperNode
+                    - '    rewardProgramAgentOpenPort: 7880'
+                    - !Ref 'AWS::NoValue'
+                  - |+
+
             /tmp/symbolinstall:
               content: !Join
                 - ''
@@ -451,6 +519,7 @@ Resources:
                   - !Ref SymbolNetwork
                   - ' -a '
                   -  !Ref SymbolAssembly
+                  - ' --noPassword'
                   - ' -c /tmp/my_custom_preset.yml --detached'
 
               mode: '000755'
@@ -554,11 +623,14 @@ Resources:
         Timeout: PT30M
 Outputs:
   symbolEndpoint:
-    Value: !Join 
-      - ''
-      - - 'http://'
-        - !GetAtt 
-          - symbolInstance
-          - PublicIp
-        - ':3000'
+    Value: !If
+      - CheckPeer
+      - 'NOAPI'
+      - !Join 
+        - ''
+        - - 'http://'
+          - !GetAtt 
+            - symbolInstance
+            - PublicIp
+          - ':3000'
     Description: symbol Rest Accesspoint

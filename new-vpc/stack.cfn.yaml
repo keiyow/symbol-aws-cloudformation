@@ -33,11 +33,12 @@ Parameters:
     - r5n.large
     ConstraintDescription: must be a valid EC2 instance type.
   symbolRootVolumeSize:
-    Default: '8'
+    Default: '20'
     Description: Please Select EBS Root Volume Size(GB)
     Type: Number
     AllowedValues:
     - '8'
+    - '20'
     - '30'
     - '100'
     ConstraintDescription: The larger the size, the more it will cost.
@@ -51,6 +52,7 @@ Parameters:
     - '300'
     - '600'
     - '1000'
+    - '2000'
     ConstraintDescription: The larger the size, the more it will cost.
   DefaultUnixUser:
     Default: symbol
@@ -70,6 +72,7 @@ Parameters:
     Default: testnet
     AllowedValues:
     - testnet
+    - mainnet
     ConstraintDescription: ''
   SymbolAssembly:
     Description: Please select Symbol Assembly
@@ -83,13 +86,9 @@ Parameters:
   SymbolBootstrapVersion:
     Description: Please select Symbol Bootstrap Version
     Type: String
-    Default: 0.4.3
+    Default: 0.4.5
     AllowedValues:
-    - 0.3.0
-    - 0.3.1
-    - 0.4.0
-    - 0.4.2
-    - 0.4.3
+    - 0.4.5
     ConstraintDescription: ''
   SymbolCreateVotingFile:
     Description: Please select Symbol create Voting File
@@ -99,6 +98,17 @@ Parameters:
     - 'Yes'
     - 'No'
     ConstraintDescription: ''
+  SymbolFriendlyName:
+    Description: Please input Symbol FriendlyName when empty, set random name
+    Type: String
+    Default: ''
+  SymbolSuperNodeSettings:
+    Description: Please select Symbol Super Node Settings (7880 open and enable agent)
+    Type: String
+    Default: 'No'
+    AllowedValues:
+    - 'Yes'
+    - 'No'
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -128,12 +138,14 @@ Metadata:
       - SymbolNetwork
       - SymbolAssembly
       - SymbolBootstrapVersion
+      - SymbolFriendlyName
       - SymbolCreateVotingFile
+      - SymbolSuperNodeSettings
 Resources:
   symbolNestStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/symbol-in-aws/57415bfe685cf21df5bb2bc11767e967.template
+      TemplateURL: https://s3.amazonaws.com/symbol-in-aws/375633b199313b0dfa504790aa7e6683.template
       Parameters:
         ServiceName:
           Ref: ServiceName
@@ -160,6 +172,10 @@ Resources:
           Ref: SymbolAssembly
         SymbolCreateVotingFile:
           Ref: SymbolCreateVotingFile
+        SymbolFriendlyName:
+          Ref: SymbolFriendlyName
+        SymbolSuperNodeSettings:
+          Ref: SymbolSuperNodeSettings
 Outputs:
   symbolEndpoint:
     Value:
