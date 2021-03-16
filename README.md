@@ -41,7 +41,9 @@
     |SymbolNetwork| Symbol Network|
     |SymbolAssembly| Symbol Assembly api or peer or dual|
     |SymbolBootstrapVersion| symbol-bootstrap version https://github.com/nemtech/symbol-bootstrap|
+    |SymbolFriendlyName| Symbol FriendlyName when empty, set random name |
     |SymbolCreateVotingFile| Create voting file. not keylink transaction|
+    |SymbolCreateVotingFile| Create Super Node Agent(Container api-node-agent)  and Add SecurityGroup Ingress port 7880. not announce enrol transaction|
 
 5. Fill the two check items
 
