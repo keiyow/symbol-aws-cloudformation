@@ -92,6 +92,7 @@ Parameters:
     Default: testnet
     AllowedValues:
       - testnet
+      - mainnet
     ConstraintDescription: ''
   SymbolBootstrapVersion:
     Description: Please select Symbol Bootstrap Version

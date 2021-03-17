@@ -86,9 +86,10 @@ Parameters:
   SymbolBootstrapVersion:
     Description: Please select Symbol Bootstrap Version
     Type: String
-    Default: 0.4.5
+    Default: 1.0.0
     AllowedValues:
-    - 0.4.5
+    - 1.0.0
+    - latest
     ConstraintDescription: ''
   SymbolCreateVotingFile:
     Description: Please select Symbol create Voting File
@@ -145,7 +146,7 @@ Resources:
   symbolNestStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/symbol-in-aws/375633b199313b0dfa504790aa7e6683.template
+      TemplateURL: https://s3.amazonaws.com/symbol-in-aws/4950dcd0a1fd45c5f18da7a27a3b1b2a.template
       Parameters:
         ServiceName:
           Ref: ServiceName
