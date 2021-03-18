@@ -27,10 +27,13 @@ Parameters:
     - t3.xlarge
     - m5.large
     - m5.xlarge
+    - m5n.xlarge
+    - m5n.2xlarge
     - c5n.xlarge
     - c5n.2xlarge
     - r5.large
     - r5n.large
+    - r5n.xlarge
     ConstraintDescription: must be a valid EC2 instance type.
   symbolRootVolumeSize:
     Default: '20'
@@ -146,7 +149,7 @@ Resources:
   symbolNestStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/symbol-in-aws/4950dcd0a1fd45c5f18da7a27a3b1b2a.template
+      TemplateURL: https://s3.amazonaws.com/symbol-in-aws/c5be6c11486cf004e77b70cf0c960429.template
       Parameters:
         ServiceName:
           Ref: ServiceName
