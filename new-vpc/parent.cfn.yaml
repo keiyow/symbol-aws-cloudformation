@@ -88,9 +88,9 @@ Parameters:
   SymbolBootstrapVersion:
     Description: Please select Symbol Bootstrap Version
     Type: String
-    Default: '1.0.0'
+    Default: '1.0.1'
     AllowedValues:
-      - '1.0.0'
+      - '1.0.1'
       - 'latest'
     ConstraintDescription: ''
   SymbolCreateVotingFile:
