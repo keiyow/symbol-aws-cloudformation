@@ -25,7 +25,7 @@
 
 3. Launch Stack and click the cloud symbol “CreateStack”.
 
-    [![image](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/designer/home?templateURL=https://symbol-in-aws.s3.amazonaws.com/stack_offilne.cfn.yaml)
+    [![image](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/designer/home?templateURL=https://symbol-in-aws.s3.amazonaws.com/stack_offline.cfn.yaml)
 
 4. Set Parameter
 
