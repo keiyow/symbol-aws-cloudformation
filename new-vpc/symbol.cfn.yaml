@@ -519,12 +519,16 @@ Resources:
                   - /data
                   - |+
 
-                  - 'symbol-bootstrap start -p '
+                  - 'symbol-bootstrap config -p '
                   - !Ref SymbolNetwork
                   - ' -a '
                   -  !Ref SymbolAssembly
                   - ' --noPassword'
-                  - ' -c /tmp/my_custom_preset.yml --detached'
+                  - ' -c /tmp/my_custom_preset.yml'
+                  - |+
+
+                  - 'symbol-bootstrap compose --noPassword'
+                  - |+
 
               mode: '000755'
               owner: root

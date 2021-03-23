@@ -1,5 +1,7 @@
 # symbol-aws-cloudformation
 
+**[Warning]This branch will not start Symbol(Only Settings)**
+
 ## Build Symbol Server in New AWS VPC
 
 * VPC
@@ -23,7 +25,7 @@
 
 3. Launch Stack and click the cloud symbol “CreateStack”.
 
-    [![image](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/designer/home?templateURL=https://symbol-in-aws.s3.amazonaws.com/stack.cfn.yaml)
+    [![image](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/designer/home?templateURL=https://symbol-in-aws.s3.amazonaws.com/stack_offilne.cfn.yaml)
 
 4. Set Parameter
 
