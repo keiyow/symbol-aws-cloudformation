@@ -530,6 +530,9 @@ Resources:
                   - 'symbol-bootstrap compose --noPassword'
                   - |+
 
+                  - 'docker-compose -f target/docker/docker-compose.yml pull'
+                  - |+
+
               mode: '000755'
               owner: root
               group: root
