@@ -530,6 +530,11 @@ Resources:
                   - 'symbol-bootstrap compose --noPassword'
                   - |+
 
+                  - 'cp /tmp/my_custom_preset.yml '
+                  - !Ref symbolDataDiretoryName
+                  - '/data/'
+                  - |+
+
                   - 'docker-compose -f target/docker/docker-compose.yml pull'
                   - |+
 

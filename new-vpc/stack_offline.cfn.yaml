@@ -149,7 +149,7 @@ Resources:
   symbolNestStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: https://s3.amazonaws.com/symbol-in-aws/d84ffb864290d55c4633463b35b95ef5.template
+      TemplateURL: https://s3.amazonaws.com/symbol-in-aws/cf718b6610c631536e757ec062476804.template
       Parameters:
         ServiceName:
           Ref: ServiceName
