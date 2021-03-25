@@ -525,6 +525,12 @@ Resources:
                   -  !Ref SymbolAssembly
                   - ' --noPassword'
                   - ' -c /tmp/my_custom_preset.yml --detached'
+                  - |+
+
+                  - 'cp /tmp/my_custom_preset.yml '
+                  - !Ref symbolDataDiretoryName
+                  - '/data/'
+                  - |+
 
               mode: '000755'
               owner: root
