@@ -88,8 +88,9 @@ Parameters:
   SymbolBootstrapVersion:
     Description: Please select Symbol Bootstrap Version
     Type: String
-    Default: '1.0.2'
+    Default: '1.0.3'
     AllowedValues:
+      - '1.0.3'
       - '1.0.2'
       - 'latest'
     ConstraintDescription: ''
