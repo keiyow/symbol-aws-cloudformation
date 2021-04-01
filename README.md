@@ -70,3 +70,8 @@ A. You can find the data in this directory.
 ```shell
 /mnt/symbol/data
 ```
+
+### Q. Why does it fail to create in Osaka Region?
+
+A. In Osaka Region, the ubuntu ami id via SSM cannot be used, so the instance creation fails.(April 1, 2021)
+   I checked with AWS support, and they said they will support it in the future.
